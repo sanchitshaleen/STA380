@@ -1,0 +1,508 @@
+---
+title: "Assignment_PM"
+author: "Sanchit Shaleen"
+date: "August 7, 2015"
+output: word_document
+---
+
+## Q1 Exploratory analysis
+
+
+```{r, message=FALSE,fig.align="center"}
+library(ggplot2)
+dataGeorgia<-read.csv("F:/Predictive Modelling(JScott)/PredictiveModelling/STA380/data/georgia2000.csv")
+dataGeorgia[,"VoteUnderCount"]<-(dataGeorgia$ballots - dataGeorgia$votes)
+dataGeorgia$poor<-as.factor(dataGeorgia$poor)
+```
+
+
+**Part (a)**
+
+Whether voting certain kinds of voting equipment lead to higher rates of undercount?
+
+Applying aggregate function to calculate the total ballot count and vote under-count over different equipments 
+```{r,,fig.align="center"}
+nuc<-aggregate(dataGeorgia$VoteUnderCount ~ dataGeorgia$equip, data = dataGeorgia, sum)
+nbc<-aggregate(dataGeorgia$ballots ~ dataGeorgia$equip, data = dataGeorgia, sum)
+
+```
+
+Merging the aggregated data
+```{r,,fig.align="center"}
+ndf<-merge(nbc,nuc,by=intersect(names(nbc), names(nuc)))
+ndf$VoteUnderCountPercent<-ndf[,3]/ndf[,2] *100
+
+```
+
+Distribution of voting across equipments
+       
+```{r,echo=FALSE,fig.align="center"}
+ggplot(ndf, aes(x=ndf[,1], y=ndf[,4])) + geom_bar(stat="identity",position="dodge",fill="lightblue")+
+  labs(x="Voting Equipments",y="Vote under count percentage",title="Distribution of voting 
+       across equipments")
+```
+
+As per the analysis, there seems to be a higher under-count percentage when the voting is
+is done using Punch Device.
+
+**Part(b) Whether we should worry that this effect has a disparate impact on poor and minority communities? **
+
+** Impact on Poor **
+``` {r,fig.align="center"}
+uc<-aggregate(dataGeorgia$VoteUnderCount ~ dataGeorgia$equip+dataGeorgia$poor, data = dataGeorgia, sum)
+bc<-aggregate(dataGeorgia$ballots ~ dataGeorgia$equip+dataGeorgia$poor, data = dataGeorgia, sum)
+```
+
+Merging the aggregated data into a new data frame and adding a new column named UnderCountPercent to it.
+
+```{r,fig.align="center"}
+df = data.frame() 
+df<-merge(bc,uc,by=intersect(names(bc), names(uc)))
+df$VoteUnderCountPercent<-df[,4]/df[,3] *100
+
+```
+
+
+
+```{r,echo=FALSE,fig.align="center"}
+ggplot(df, aes(x=df[,1], y=df[,5],fill=df[,2])) + geom_bar(stat="identity",position="dodge")+
+  labs(x="Voting Equipments",y="Vote under count percentage",title="Distribution of voting 
+       across equipments and poor community")
+```
+
+Analysis: There seems to be a higher under-count percentage amongst poor people using Optical device for 
+casting their vote
+
+** Impact on Minority **
+There's a weak co-relation between Minority community and Vote undercount
+```{r,fig.align="center"}
+qplot(dataGeorgia$VoteUnderCount/dataGeorgia$ballots,dataGeorgia$perAA,geom=c("point","smooth"),method="lm",
+xlab="Vote Under Count Fraction",ylab="Minority Fraction")
+```
+
+
+## Ques 2 Bootstrapping
+
+Part(a)
+
+```{r, message=FALSE,fig.align="center"}
+library(mosaic)
+library(fImport)
+library(foreach)
+set.seed(10)
+```
+
+Import a few stocks
+
+```{r,fig.align="center"}
+mystocks = c("SPY", "TLT", "LQD","EEM","VNQ")
+myprices = yahooSeries(mystocks, from='2011-01-01', to='2015-08-05')
+```
+
+A helper function for calculating percent returns from a Yahoo Series
+```{r,fig.align="center"}
+YahooPricesToReturns = function(series) {
+  mycols = grep('Adj.Close', colnames(series))
+  closingprice = series[,mycols]
+  N = nrow(closingprice)
+  percentreturn = as.data.frame(closingprice[2:N,]) / as.data.frame(closingprice[1:(N-1),]) - 1
+  mynames = strsplit(colnames(percentreturn), '.', fixed=TRUE)
+  mynames = lapply(mynames, function(x) return(paste0(x[1], ".PctReturn")))
+  colnames(percentreturn) = mynames
+  as.matrix(na.omit(percentreturn))
+}
+```
+
+Compute the returns from the closing prices
+```{r,fig.align="center"}
+myreturns = YahooPricesToReturns(myprices)
+```
+
+View the returns  as draws from the joint distribution
+```{r,fig.align="center"}
+pairs(myreturns)
+plot(myreturns[,1], type='l')
+```
+
+mu_SPY = mean(myreturns[,4])
+sigma_SPY = sd(myreturns[,4])
+
+Calculate the standard deviation across different different stock returns
+```{r,fig.align="center"}
+mynames = sapply(data.frame(myreturns), function(x) sd(x))
+
+```
+
+Compute the moments of a one-day change in your portfolio
+totalwealth = 100000
+weights = c(0.20,0.20,0.20,0.20,0.20) 	# What percentage of your wealth will you put in each stock?
+
+How much money do we have in each stock?
+holdings = weights * totalwealth
+
+Plot for variability in returns for each stock over the period from='2011-01-01' to='2015-08-05'
+
+```{r,echo=FALSE,fig.align="center"}
+par(mfrow=c(2,3))
+hist(myreturns[,1],main = paste("Histogram of SPY" ))
+hist(myreturns[,2],main = paste("Histogram of TLT"))
+hist(myreturns[,3],main = paste("Histogram of LQD" ))
+hist(myreturns[,4],main = paste("Histogram of EEM" ))
+hist(myreturns[,5],main = paste("Histogram of VNQ" ))
+```
+
+
+**Part(b)**
+
+After analysing the Standard Deviation of the risk/return properties of the 5 mentioned ETF's
+LQD and and SPY safe stocks to purchase since they have smaller standard deviations.
+
+While EEM and VNQ are riskier stocks to purchase since they have higher standard deviations.
+
+Below are the values of standard deviations for the 5 stocks mentioned.
+The standard deviation values helps in characterizing the risk/return properties for these stocks
+```{r}
+mynames = sapply(data.frame(myreturns), function(x) sd(x))
+mynames
+```
+
+
+
+**Part(c)**
+
+Bootstrap resampling to estimate the 4-week (20 trading day) value at risk of each of your three portfolios.
+
+**(i) Equal Split Portfolio**
+
+```{r,fig.align="center"}
+totalwealth = 100000
+weights = c(0.20,0.20,0.20,0.20,0.20) 
+holdings = weights * totalwealth
+n_days = 20
+```
+
+Using a bootstrap approach with more stocks
+```{r,fig.align="center"}
+mystocks = c("WMT", "TGT", "XOM", "MRK", "JNJ")
+myprices = yahooSeries(mystocks, from='2011-01-01', to='2015-07-30')
+```
+
+Compute the returns from the closing prices
+```{r,fig.align="center"}
+myreturns = YahooPricesToReturns(myprices)
+pairs(myreturns)
+```
+
+Sample a random return from the empirical joint distribution
+This simulates a random day
+```{r,fig.align="center"}
+return.today = resample(myreturns, 1, orig.ids=FALSE)
+```
+
+Update the value of your holdings and compute your new total wealth
+```{r,fig.align="center"}
+holdings = holdings + holdings*return.today
+totalwealth = sum(holdings)
+```
+
+par(mfrow=c(3,1))
+
+Bootstrapping for even split portfolio for a 20 day trading window
+```{r,fig.align="center"}
+set.seed(40)
+n_days = 20
+# Now simulate many different possible trading years!
+sim1 = foreach(i=1:5000, .combine='rbind') %do% {
+	totalwealth = 100000
+	weights = c(0.2, 0.2, 0.2, 0.2, 0.2)
+	holdings = weights * totalwealth
+	wealthtracker = rep(0, n_days) # Set up a placeholder to track total wealth
+	for(today in 1:n_days) {
+		return.today = resample(myreturns, 1, orig.ids=FALSE)
+		holdings = holdings + holdings*return.today
+		totalwealth = sum(holdings)
+		wealthtracker[today] = totalwealth
+	}
+	wealthtracker
+}
+
+hist(sim1[,n_days], 20)
+
+# Profit/loss
+hist(sim1[,n_days]- 100000,xlab="Equal Split Portfolio",main="Histogram for return for Equal Split Portfolio")
+
+# Calculate 5% value at risk
+quantile(sim1[,n_days], 0.05) - 100000
+
+```
+
+**Analysis: The 5% risk associated with the portfolio (even split) is -3560.43 **
+
+
+**(ii) Safer Portfolio **
+Bootstrapping for safer portfolio.Now loop over two trading weeks
+Considering the portfolio of SPY,TLT and LQD as a safe portfolio
+Going by the sd values of the above stocks, which is in the ratio of
+2:2:1, we would invest in these stocks in the inverse proportion(lower the sd value,
+higher the investment in that stock,considering it's a safe portfolio)
+So the investment in this portfolio would be in the ratio of 1:1:2 for 
+SPY,TLT and LQD resp.
+```{r,fig.align="center"}
+set.seed(40)
+n_days = 20
+
+## Now simulate many different possible trading years!
+sim1 = foreach(i=1:5000, .combine='rbind') %do% {
+	totalwealth = 100000
+	weights = c(0.25, 0.25, 0.50,0,0)
+	holdings = weights * totalwealth
+	wealthtracker = rep(0, n_days) # Set up a placeholder to track total wealth
+	for(today in 1:n_days) {
+		return.today = resample(myreturns, 1, orig.ids=FALSE)
+		holdings = holdings + holdings*return.today
+		totalwealth = sum(holdings)
+		wealthtracker[today] = totalwealth
+	}
+	wealthtracker
+}
+
+hist(sim1[,n_days], 20)
+
+## Profit/loss
+hist(sim1[,n_days]- 100000,xlab="Safer Portfolio",main="Histogram for return for Safe Portfolio")
+
+## Calculate 5% value at risk
+quantile(sim1[,n_days], 0.05) - 100000
+
+```
+
+
+
+**Analysis: The 5% risk associated with the portfolio (SPY,TLT and LQD) is -2217.123 **
+
+
+
+**(iii) Riskier Portfolio**
+
+Bootstrapping for riskier portfolio.Now loop over two trading weeks
+Considering the portfolio of EEM and VNQ as a risky portfolio
+Going by the sd values of the above stocks, which is in the ratio of
+6:5, we would invest in these stocks in the direct proportion(higher the sd value,
+higher the investment in that stock,considering it's a risky portfolio)
+
+```{r,fig.align="center"}
+
+## Now simulate many different possible trading years!
+set.seed(20)
+n_days = 20
+sim1 = foreach(i=1:5000, .combine='rbind') %do% {
+	totalwealth = 100000
+	weights = c(0.54, 0.46, 0,0,0)
+	holdings = weights * totalwealth
+	wealthtracker = rep(0, n_days) # Set up a placeholder to track total wealth
+	for(today in 1:n_days) {
+		return.today = resample(myreturns, 1, orig.ids=FALSE)
+		holdings = holdings + holdings*return.today
+		totalwealth = sum(holdings)
+		wealthtracker[today] = totalwealth
+	}
+	wealthtracker
+}
+
+hist(sim1[,n_days], 20)
+
+##Profit/loss
+hist(sim1[,n_days]- 100000,xlab="Riskier Portfolio",main="Histogram for return for Riskier Portfolio")
+
+## Calculate 5% value at risk
+quantile(sim1[,n_days], 0.05) - 100000
+```
+
+**Analysis:The 5% risk associated with the portfolio (EEM and VNQ) -5889.972 **
+
+
+## Ques 3 Clustering and PCA
+
+Applying K-Means Clustering Technique for distinguishing between colors of wine
+
+Reading the data
+```{r,fig.align="center"}
+wine<-read.csv("F:/Predictive Modelling(JScott)/PredictiveModelling/STA380/wine.csv")
+wine$quality<-as.factor(wine$quality)
+wine_scaled <- scale(wine[,-c(12,13)], center=TRUE, scale=TRUE)
+
+```
+
+Transforming and scaling data
+```{r,fig.align="center"}
+wine_scaled <- scale(wine[,-c(12,13)], center=TRUE, scale=TRUE)
+df_color<-wine$color
+```
+
+
+
+Finding the optimum value of number of clusters(k) using the value of CH- Index
+```{r,warning=FALSE,fig.align="center"}
+n<-dim(wine_scaled)[2]
+ch_index = numeric(length = 15)
+for(i in 2:15){
+  cluster_all = kmeans(wine_scaled, centers=i, nstart=20)
+  ch_index[i-1] = (sum(cluster_all$betweenss)/(i-1))/(sum(cluster_all$withinss)/(n-i))
+}
+plot(2:15, ch_index[1:14], xlab='K', ylab='CH(K)', type='b', main=' CH Index versus Number of Clusters(K)' )
+```
+
+
+Since there is a rise in the value at k=2 and a constant decline thereafter, value of k should be 2
+
+Apply K-Means clustering for distinguishing between the 2 colors
+```{r,fig.align="center"}
+set.seed(10)
+clusterall <- kmeans(wine_scaled, centers=2, nstart=20)
+
+```
+
+Comparing the results of the clustering with the original clustered data on the basis of color
+```{r,fig.align="center"}
+table(df_color,cluster_all$cluster)
+```
+
+Applying K-Means Clustering Technique for distinguishing amongst the 7 qualities of wine
+```{r,fig.align="center"}
+cluster_all <- kmeans(wine_scaled, centers=7, nstart=50)
+df_quality=as.factor(wine$quality)
+table(df_quality,cluster_all$cluster)
+```
+
+Analysis of K-Means technique for our problem:
+  The technique was successful in distinguishing between the 2 colors while performed reasonably well
+while distinguishing amongst the qualities of wine
+
+Using PCA to solve the problem
+
+```{r,fig.align="center"}
+wine<-read.csv("F:/Predictive Modelling(JScott)/PredictiveModelling/STA380/wine.csv")
+wine_scaled <- scale(wine[,-c(12,13)], center=TRUE, scale=TRUE)
+```
+
+** Applying PCA**
+```{r,fig.align="center"}
+pc1 <-prcomp(wine_scaled)
+
+```
+
+Look at the basic plotting and summary methods
+```{r,fig.align="center"}
+summary(pc1)
+plot(pc1)
+biplot(pc1)
+```
+
+A more informative biplot for color and quality features
+```{r,fig.align="center"}
+library(ggplot2)
+loadings = pc1$rotation
+scores = pc1$x
+
+qplot(scores[,1], scores[,2], color=wine$color, xlab='Component 1', ylab='Component 2')
+
+wine$quality<-as.factor(wine$quality)
+
+qplot(scores[,1], scores[,2], color=wine$quality, xlab='Component 1', ylab='Component 2')
+
+```
+
+
+##Ques 4 Market segmentation
+
+```{r,fig.align="center"}
+twitter_data<-read.csv("F:/Predictive Modelling(JScott)/PredictiveModelling/STA380/data/social_marketing.csv")
+twitter_data<-twitter_data[,-c(1,6)]
+twitter_data_scaled <- scale(twitter_data, center=TRUE, scale=TRUE)
+
+```
+
+
+Finding the right number of clusters from CH Index value by analysing the graph
+```{r,fig.align="center"}
+ch_index = numeric(length = 14)
+for(i in 2:15){
+  cluster_all = kmeans(twitter_data_scaled, centers=i, nstart=30)
+  ch_index[i-1] = (sum(cluster_all$betweenss)/(i-1))/(sum(cluster_all$withinss)/(n-i))
+}
+plot(2:15, ch_index[1:14], xlab='K', ylab='CH(K)', type='b', main=' CH Index versus Number of Clusters(K)' )
+
+```
+
+Run the K-Means clustering algorithm over the optimal number of clusters found above viz. 6
+
+```{r,fig.align="center"}
+set.seed(10)
+cluster_new <- kmeans(twitter_data, centers=6, nstart=20)
+```
+
+
+Get all the clusters sequentially and analyse each cluster to find which market segment is being represented
+by each of them.
+We do this, by first adding the cluster field to our original data frame and then calculating
+the mean over the values present under each column within each cluster.
+
+```{r,fig.align="center"}
+twitter_data$cluster1<-cluster_new$cluster
+```
+
+**Cluster 1:**
+  Studying this group,what we infer is that, this group is health conscious,cares about personal_fitness,
+health_nutrition,food,love outdoor activities and interacting with people.So mainly this group comprises
+of young men and women probably in the age group of 16-25 years
+
+```{r,fig.align="center"}
+clust1= subset(twitter_data, cluster1==1)
+tail(sort(sapply(clust1[,-36],mean)))
+```
+
+**Cluster 2:**
+  This group is religious,involved in parenting,cooking food,enjoys crafts,sports and chatting with people.
+So this group mainly comprises of people who are in the age group of 30-50 years.
+
+```{r,fig.align="center"}
+clust1= subset(twitter_data, cluster1==2)
+tail(sort(sapply(clust1[,-36],mean)))
+```
+
+**Cluster 3:**
+  This group loves to travel,share photos,watches movies as well.This segment mainly
+consists of children and the youth population in the age group of 5-22 years.
+
+```{r,fig.align="center"}
+clust1= subset(twitter_data, cluster1==3)
+tail(sort(sapply(clust1[,-36],mean)))
+```
+
+**Cluster 4:**
+  This group loves to do shopping,has a taste in arts and keep themselves updated of all the latest events.
+The group probably comprises of mid-aged people in the age group of 30-55.
+
+```{r,fig.align="center"}
+clust1= subset(twitter_data, cluster1==4)
+tail(sort(sapply(clust1[,-36],mean)))
+```
+
+**Cluster 5:**
+  This group has an interest in following politics and enjoying travelling as well.This segment of population mainly comprises of young men in the age group of 18-35 years.
+
+```{r,fig.align="center"}
+clust1= subset(twitter_data, cluster1==5)
+tail(sort(sapply(clust1[,-36],mean)))
+```
+
+**Cluster 6:**
+  This group is active in businesses and chattering with new clients.This is a professional group of people.
+The working class population dominates this group.
+
+```{r,fig.align="center"}
+clust1= subset(twitter_data, cluster1==6)
+tail(sort(sapply(clust1[,-36],mean)))
+```
+
+
