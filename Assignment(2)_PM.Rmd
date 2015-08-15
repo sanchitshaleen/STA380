@@ -1,0 +1,48 @@
+
+
+1)What is the best time of day to fly to minimize delays?
+2)What is the best time of year to fly to minimize delays?
+3)How do patterns of flights to different destinations or parts of the country change over the course of the year?
+4)What are the bad airports to fly to?
+
+```{}
+
+airline<-read.csv("F:/Predictive Modelling Assignment/Predictive-Modelling-JScott-/ABIA.csv")
+View(airline)
+
+str(airline)
+
+ArrDelay,DepDelay,CarrierDelay,WeatherDelay,NASDelay,SecurityDelay,LateAircraftDelay
+
+## Replaing all the na values in CarrierDelay,WeatherDelay,NASDelay,SecurityDelay,LateAircraftDelay columns with zero
+
+airline[c("CarrierDelay","WeatherDelay","NASDelay","SecurityDelay",
+"LateAircraftDelay")][is.na(x[c("CarrierDelay","WeatherDelay","NASDelay","SecurityDelay","LateAircraftDelay")])] <- 0
+
+
+airline$CRSDepTime<-as.factor(airline$CRSDepTime)
+airline$TotalDelay<-airline$ArrDelay+airline$DepDelay+airline$CarrierDelay + airline$WeatherDelay+airline$NASDelay + airline$SecurityDelay +airline$LateAircraftDelay
+
+plot(airline$CRSDepTime,airline$TotalDelay)
+
+
+aggdata <-aggregate(airline, by=list(cyl,vs),
+  FUN=mean, na.rm=TRUE)
+
+library(ggplot2)
+
+
+new_df<-aggregate(airline$TotalDelay~airline$CRSDepTime,data = airline)
+
+
+
+new_df<-(new_df[order(new_df[,2]), ])
+        
+View(new_df)
+
+plot(new_df[,1],new_df[,2])
+ggplot(new_df, aes(new_df[,1],new_df[,2])) + geom_bar(stat="identity")+
+labs(x="Time",y="Average Delay",title="Delay v/s Time of Day")
+
+
+```

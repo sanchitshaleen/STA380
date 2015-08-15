@@ -1,0 +1,190 @@
+---
+output: pdf_document
+---
+
+#MODULE 19
+
+The module discusses the two topics covered in the Session 2 of the final class:
+
+  - Naive Bayes
+  - Topic Models
+
+##Naive Bayes
+
+Lets say we have estimated the probability vectors for two corpora - w1, w2 where the documents in the two corpora were authored by two authors. The probability vector estimates for the two corpora are as given below:
+
+Probability Vector Estimate for Corpus 1:
+$$
+\hat{w}_1 = \begin{bmatrix} \hat{w}_{11}, \hat{w}_{12} ...\hat{w}_{1D} \end{bmatrix}
+$$
+
+Probability Vector Estimate for Corpus 2:
+$$
+\hat{w}_2 = \begin{bmatrix} \hat{w}_{21}, \hat{w}_{22} ...\hat{w}_{2D} \end{bmatrix}
+$$
+
+We derive these probability estimates by drawing frequencies and/or by applying laplace smoothing discussed in the previous module. 
+
+Say X* is a test document (a bag of words representation) which we haven't used in the probability vector estimates above and X* is given as
+
+$$
+X = 
+\begin{bmatrix}
+X_{1}^{*} & \ldots & X_{D}^{*}  
+\end{bmatrix}
+$$
+
+where 1 to D are the words in the document and ${X^{*}}$ is a bag of words representation with $X^{*}_{1}$ being the count of word 1 in test document to $X^*_{D}$, count of the Dth word in the document.
+
+Each corpus has documents that are authored by a single author. To answer the question, from which of the two corpora did the document come from or who was the author of the document we use the Naive Bayes Model.
+
+If the true generative process are 'the bag of words model' and if they belong to the first corpus then we can use the multinomial probability model to compute the probability as given below:
+
+$$
+P({X}^{*}|\hat{w}_{1}) = \frac{N^{*}!}{(X^{*}_{1}! X^{*}_{2}! ... X^{*}_{D}!)} (\hat{w}^{{X}^*_{1}}_{11}. \hat{w}^{{X}^*_{1}}_{12} ... \hat{w}^{{X}^*_{1}}_{1D})
+$$
+
+where $\hat{w}_{1}$ is the probability vector estimate for corpus 1
+and
+$$N^{*} = \sum_{j=1}^{D} X^{*}_{j}$$
+
+Similarly we can compute the probability/likelihood that the document came from the
+second corpus as:
+
+$$
+P({X}^{*}|\hat{w}_{2}) = \frac{N^{*}!}{(X^{*}_{1}! X^{*}_{2}! ... X^{*}_{D}!)} (\hat{w}^{{X}^*_{1}}_{21}. \hat{w}^{{X}^*_{1}}_{22} ... \hat{w}^{{X}^*_{1}}_{2D})
+$$
+
+where $hat{w}_{2}$ is the probability vector estimate for corpus 2
+and
+$$N^{*} = \sum_{j=1}^{D} X^{*}_{j}$$
+
+To decide on which corpora we use the Bayes Rule given below along with the probabilities estimated above.
+
+For two hypothesis Y1 and Y2 and data X, the probability of Y1 given data (X) is given by:
+
+$$
+P({Y}_{1}|X)= P({Y}_{1}) * P(X|{Y}_{1})/P(X) 
+$$
+
+And similarly for Y2 given X: 
+
+$$
+P({Y}_{2}|X)= P({Y}_{2}) * P(X|{Y}_{2})/P(X) 
+$$
+
+
+Two key points from the discussion so far:
+
+The reason for using Bayes Rule is that Bayes rule allows us to compute prior probabilities using the Bayes Rule which is unaccounted for in the Multinomial Probability model. 
+The Naive Bayes model is based on the assumption that the word count of the individual words in a document are independent. 
+
+We can simplify the model developed using the Multinomial Probability, we can ignore the following term from the comparison as they are common in both the probabilities:
+    
+$$\frac{N^{*}!}{(X^{*}_{1}! X^{*}_{2}! ... X^{*}_{D}!)}$$
+
+Also, while taking a product of small fractions, we often face a problem of numerical underflow. Numerical underflow  is a condition in a computer program where the result of a calculation is a smaller number than the computer can actually store in memory. To avoid this we take the represent the probability in the log scale as below. Please note that the expression is also linear in parameters after taking the log.
+
+$$
+\log(P(X^{*}| \hat{w}_{1})) = \sum_{=1}^{k} X^{*}_{j} \log(\hat{w}_{ij})
+$$
+
+
+
+#Topic Model
+
+Topic model can be defined as a model of text built out of a mixture of superposition of simple bag of words models that can be used to determine the theme of the document. For example in articles related to Austin we will find topics such as football, barbeque which will have a set of words associated with them. 
+
+If we can take the analogy to documents, the components or constituents are the bag of words model and we use use them to create rich distributions to determine theme.
+
+Bag of words can be regarded as set of word with thematic coherence and documents being a superposition of these bag of words.
+
+
+We will explain the  *topic model* with the two example below 
+
+###Simple_Mixture - An example
+There are three kinds of basketball players having an arbitrary measure of their skills
+Topic modeling can be thought of as mixture modeling and in this case the three basketball players are mixture components. We are trying to form a basketball team based on distribution of each component. Hence, We will get a mixture component distribution based on distribution of individual components  
+
+```{r}
+#normally distributed around 40
+mu1 = 40
+sigma1 = 10
+#normally distributed around 65
+mu2 = 65
+sigma2 = 20
+#normally distributed around 90
+mu3 = 90
+sigma3 = 3
+```
+
+
+The three mixture components
+```{r}
+curve(dnorm(x, mu3, sigma3), from=0, to=100, n=1001, col='red', xlab='Basketball Skill', ylab='Probability')
+curve(dnorm(x, mu2, sigma2), from=0, to=100, n=1001, col='blue', add=TRUE)
+curve(dnorm(x, mu1, sigma1), from=0, to=100, n=1001, col='grey', add=TRUE)
+```
+
+
+The weights for each class of basketball players are defined as 30% ,60% , 10%. The combination of the three class of players gives a basketball team  which has its own distribution
+
+Each point in the basketball team is a combination of weights of points of individual class of basketball players. Same goes for area under the curve for basketball team.
+
+Based on the graph we can see that we get a rich distribution of mixture(basketball team) based on the collection of small constituents(Class of basketball players)
+
+```{r}
+weights = c(0.3, 0.6, 0.1)
+
+curve(weights[1]*dnorm(x, mu1, sigma1) + weights[2]*dnorm(x, mu2, sigma2)  + weights[3]*dnorm(x, mu3, sigma3),
+      from=0, to=100, ylab='Probability', n=1001)
+
+curve(weights[3]*dnorm(x, mu3, sigma3), col='red', n=1001, add=TRUE)
+curve(weights[2]*dnorm(x, mu2, sigma2), from=0, to=100, n=1001, col='blue', add=TRUE)
+curve(weights[1]*dnorm(x, mu1, sigma1), from=0, to=100, n=1001, col='grey', add=TRUE)
+```
+
+###The Congressmen - Example-2
+The second example is the one with the congressman that had been discussed as a part of the PCA analysis. The dataset used here is a processed document term matrix from the original congressmen dataset.
+
+```{r}
+library(maptpx) # Posterior maximization for topic models
+library(wordcloud)
+
+# both files are document term matrix
+countdata = read.csv("F:/Predictive Modelling(JScott)/STA380-master/STA380-master/data/congress109.csv", header=TRUE, row.names=1)
+memberdata = read.csv("F:/Predictive Modelling(JScott)/STA380-master/STA380-master/data/congress109members.csv", header=TRUE, row.names=1)
+```
+Like kmeans clustering, here we would have to predefine number of topics
+
+```{r  fig.align='center', results=FALSE}
+tm1 = topics(countdata, 10)
+summary(tm1) 
+```
+
+From the summary we would find not the frequent words but the most surprising one with the highest lift in comparison to their baseline probability 
+
+Plotting the weight of each topic in each document using 'barcode graph'.
+
+
+```{r message = FALSE, warnings = FALSE}
+
+plot(tm1)
+```
+
+Analyze the tokens used with the help of wordcloud.
+
+```{r  message=FALSE, warning=FALSE, error=FALSE,fig.width=16, fig.height=6}
+
+options(warn=-1)
+wordcloud(colnames(countdata), tm1$theta[,1], min.freq=0, max.words=100)
+wordcloud(colnames(countdata), tm1$theta[,2], min.freq=0, max.words=100)
+wordcloud(colnames(countdata), tm1$theta[,3], min.freq=0, max.words=100)
+```
+
+Selecting K
+```{r  message=FALSE, warning=FALSE, error=FALSE,fig.width=16, fig.height=6, fig.align='center'}
+
+tm_select = topics(countdata, K=c(5:15))
+summary(tm_select)
+```
