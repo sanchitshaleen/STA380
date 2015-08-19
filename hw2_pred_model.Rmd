@@ -1,0 +1,232 @@
+##HOMEWORK 2##
+##SANCHIT SHALEEN##
+
+#Ques 1. Flights at ABIA#
+
+## 1) What is the best time of day to fly to minimize delays?##
+
+Considering the departure delays:I make a heat map across the days of the week and the time of the day over the 1 yeardata and aggregate over the departure delay.
+
+```{r}
+
+airports= read.csv('F:/Predictive Modelling Assignment/Predictive-Modelling-JScott-/ABIA.csv')
+attach(airports)
+airports$DepTime_hour=as.integer(DepTime/100)
+airports$ArrTime_hour=as.integer(ArrTime/100)
+
+
+dep_agg<- aggregate(DepDelay~DayOfWeek+DepTime_hour,airports,FUN='sum')
+library(ggplot2)
+library(RColorBrewer)
+ggplot(dep_agg, aes(DepTime_hour,y=DayOfWeek))+
+  geom_tile(aes(fill=DepDelay))+
+  scale_fill_gradientn(colours=brewer.pal(9,"BrBG"),
+                       breaks=seq(0,max(dep_agg$DepDelay),by=3000))+
+  scale_y_continuous(breaks=7:1,labels=c("Sun","Sat","Fri","Thur","Wed","Tue","Mon"))+
+  labs(x="Time of Day (hours)", y="Day of Week")+ coord_fixed()
+
+```
+
+##Analysis :##
+
+The best time of the day to fly to minimize the departure delay is during the early morning hours between 3am till 7 am as denoted by the low intensity of the heat map during these times
+
+As the day progresses, the departure delay starts to increase and reaches the maximum during evening hours of 7 pm and 9pm (denoted in the heatmap as 19 and 21 hours)
+
+
+Considering the departure delays,I make a heat map across the days of the week and the time of the day overthe 1 year data and aggregate over the # #arrival delay.
+
+```{r}
+dep_agg<- aggregate(ArrDelay~DayOfWeek+ArrTime_hour,airports,FUN='sum')
+library(ggplot2)
+library(RColorBrewer)
+ggplot(dep_agg, aes(ArrTime_hour,y=DayOfWeek))+
+  geom_tile(aes(fill=ArrDelay))+
+  scale_fill_gradientn(colours=brewer.pal(9,"BrBG"),
+                       breaks=seq(0,max(dep_agg$ArrDelay),by=3000))+
+  scale_y_continuous(breaks=7:1,labels=c("Sun","Sat","Fri","Thur","Wed","Tue","Mon"))+
+  labs(x="Time of Day (hours)", y="Day of Week")+ coord_fixed()
+
+```
+
+
+##Analysis:##
+
+The best time of the day to fly to minimize the arrival delay is during the morning hours between 3 am till 10 am and again after that between 12 noon and 1 pm
+
+
+As the day progresses,the arrival delay starts to increase and reaches the maximum during evening hours of
+8 pm and12 midnight (denoted in the heatmap as 20 and 24 hours)
+
+
+## 2) What is the best time of year to fly to minimize delays?##
+
+Considering the arrival delays firstly,I again plot a heatmap to analyse the delays across the months and days
+
+```{r}
+arr_agg_month<- aggregate(ArrDelay~DayOfWeek+Month,airports,FUN='sum')
+
+ggplot(arr_agg_month, aes(Month,y=DayOfWeek))+
+  geom_tile(aes(fill=ArrDelay))+
+  scale_fill_gradientn(colours=brewer.pal(9,"BrBG"),
+                       breaks=seq(0,max(arr_agg_month$ArrDelay),by=3000))+
+  scale_y_continuous(breaks=7:1,labels=c("Sun","Sat","Fri","Thur","Wed","Tue","Mon"))+
+  scale_x_continuous(breaks=1:12, labels=c("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"))+
+  labs(x="Month", y="Day of Week")+ coord_fixed()
+```
+
+##Analysis :##
+
+While the in the Month of March, there were significant arrival delays on Monday.Similarly, in the month ofApril,Friday sees a significant amount of arrival delay##
+
+Then, I consider the departure delays and again plot a heatmap to analyse the delays across the months and days
+
+
+```{r}
+Dep_agg_month<-aggregate(DepDelay~DayOfWeek+Month,airports,FUN='sum')
+
+ggplot(Dep_agg_month, aes(Month,y=DayOfWeek))+
+  geom_tile(aes(fill=DepDelay))+
+  scale_fill_gradientn(colours=brewer.pal(9,"BrBG"),
+                       breaks=seq(0,max(Dep_agg_month$DepDelay),by=3000))+
+  scale_y_continuous(breaks=7:1,labels=c("Sun","Sat","Fri","Thur","Wed","Tue","Mon"))+ scale_x_continuous(breaks=1:12, labels=c("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"))+
+  labs(x="Month", y="Day of Week")+ coord_fixed()
+
+```
+
+
+##Analysis :##
+
+The best time of year to fly to minimize departure delay are in the months of September,October and November
+
+While the in the Month of March, there were significant departure delays on Monday.Similarly, in the month ofApril and May,Friday sees a significant amount of arrival delay.
+
+
+## 3) How do patterns of flights to different destinations or parts of the country change over the course of ##the year?
+
+For this problem, I plot the different airport cities over the geographic map according to the coordinates of the city airport.Then I aggregate on the number of flights departing from each city airport and the size of the size of the dots correspond to the number of departing flights from that city airport.
+
+```{r echo=FALSE,fig.align="center"}
+
+##Process airport codes and latitude and longitutde
+
+airports = read.csv('F:/Predictive Modelling Assignment/Predictive-Modelling-JScott-/airports.dat', header = FALSE)
+
+names(airports)= c('ID', 'Airport Name','City','Country','IATA','ICAO','Latitude','Longitude','V9', 'v10', 'v11', 'v12')
+
+airports = airports[,-c(1,6,9,10,11,12)]
+airports = airports[,c(4,1,2,3,5,6)]
+
+##Process the data available
+
+airline<-read.csv("F:/Predictive Modelling Assignment/Predictive-Modelling-JScott-/ABIA.csv")
+
+mergeTable = data.frame(matrix(NA, nrow = 99260))
+mergeTable = mergeTable[,-c(1)]
+mergeTable = cbind(airline,mergeTable)
+mergeTable = merge(mergeTable, airports, by.x = "Origin", by.y = "IATA", all.x = TRUE)
+
+mergeTable = mergeTable[,-c(30,32)]
+colnames(mergeTable)[32] = "Origin_Longitude"
+colnames(mergeTable)[31] = "Origin_Latitude"
+colnames(mergeTable)[30] = "Origin_City"
+
+mergeTable = merge(mergeTable, airports, by.x = "Dest", by.y = "IATA", all.x = TRUE)
+mergeTable = mergeTable[,-c(33,35)]
+colnames(mergeTable)[33] = "Dest_City"
+colnames(mergeTable)[34] = "Dest_Latitude"
+colnames(mergeTable)[35] = "Dest_Longitude" 
+
+
+airline3<-mergeTable
+airline3$flights<-1
+
+airline3<-aggregate(flights ~ Origin_City+Origin_Latitude+Origin_Longitude, data = airline3, sum)
+
+head(airline3)
+library(ggmap)
+
+airline3$Origin_Latitude<-as.numeric(airline3$Origin_Latitude)
+airline3$Origin_Longitude<-as.numeric(airline3$Origin_Longitude)
+
+
+library(ggplot2)
+library(maps)
+#load us map data
+all_states <- map_data("state", colour="white")
+#plot all states with ggplot
+p <- ggplot()
+p <- p + geom_polygon( data=all_states, aes(x=long, y=lat, group = group),colour="white", fill="grey10" )
+
+p <- p + geom_point( data=airline3, aes(x=Origin_Longitude, y=Origin_Latitude, size = sqrt(flights)), color="coral1") 
+
+# p <- p +geom_point(data=airline3, aes(y = Origin_Latitude, x = Origin_Longitude, size = sqrt(flights*1000), colour = "red"))
+#scale_size(name="Total Flights")
+p <- p + geom_text( data=airline3, hjust=0.5, vjust=-0.8, aes(x=Origin_Longitude, y=Origin_Latitude, label=Origin_City), colour="orange", size=4 )
+p
+
+
+```
+
+##Analysis##
+Austin, Dallas, Denver, Phoenix, El Paso see a high volume of flights over the course of the year while Salt Lake City, Minneapolis,Nashville etc have a realtively low volume of flights
+
+
+
+#Ques 3. Association rule mining#
+
+
+Reading the text file in the 'basket' format as transactions
+```{r message = FALSE}
+library(arules) 
+my_groceries=read.transactions("F:/Predictive Modelling(JScott)/STA380-master/STA380-master/data/groceries.txt", format ="basket", sep = ",",
+                               rm.duplicates = TRUE)
+
+```
+
+Whole milk,Other vegetables,rolls/buns,soda and yogurt are top grocery items by count
+```{r}
+itemFrequencyPlot(my_groceries, topN = 25)
+```
+
+Applying the apriori function to find the association rules within the items
+Generate all itemsets whose support >= minsup of 0.01 and Confidence is >= 0.5
+
+```{r message = FALSE, warnings = FALSE}                   
+grocery_rules <-apriori(my_groceries,parameter=list(support=.01, confidence=.5, maxlen=4))
+
+```
+
+
+Analysing the rules which are generated from the apriori function
+```{r}
+inspect(grocery_rules)
+
+## Inspecting itemsets with lift value > 2
+inspect(subset(grocery_rules, subset=lift > 2))
+
+## Inspecting itemsets with support value > 0.01 & confidence > 0.5
+inspect(subset(grocery_rules, subset=support > 0.01 & confidence > 0.5))
+
+## Inspecting itemsets with confidence > 0.5
+inspect(subset(grocery_rules, subset=confidence > 0.5))
+```
+
+There is a high propensity for people buying "Other Vegetables and yogurt" since they have a high
+support value of 0.02226741.
+
+Similarily, for people buying "citrus fruit and root vegetables", they  are more likely to purchase
+other vegetables" as well since this association has a high confidence value of 0.5862069.
+
+Plotting the confidence versus support graph and analysing the support and confidence values.
+
+```{r}
+
+library(arulesViz)
+plot(grocery_rules)
+plot(grocery_rules, method="graph", control=list(type="items"))
+```
+
+
+
+
