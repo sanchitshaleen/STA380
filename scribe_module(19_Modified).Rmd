@@ -118,7 +118,7 @@ for(author in author_dirs) {
 
 The snippet below stores the contents of documents in the my_corpus variable and the code also retrieves the files names for each corpus and assigns it to the corresponding corpus. 
 
-```{r}
+```{r fig.align=center}
 all_docs = lapply(file_list, readerPlain) 
 names(all_docs) = file_list
 names(all_docs) = sub('.txt', '', names(all_docs))
