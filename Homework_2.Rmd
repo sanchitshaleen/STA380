@@ -11,7 +11,7 @@
 Considering the departure delays:I make a heat map across the days of the week and the time of the day over the 1 yeardata and aggregate over the departure delay.
 
 ```{r}
-setwd("C:/Users/Vijai/OneDrive/Github/STA380 - 08132015/STA380-master/data")
+setwd("C:/Users/Sanchit/OneDrive/Github/STA380 - 08132015/STA380-master/data")
 
 ```
 
