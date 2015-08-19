@@ -1,0 +1,592 @@
+---
+#HOMEWORK 2#
+#SANCHIT SHALEEN#
+
+---
+
+#Ques 1. Flights at ABIA#
+
+## 1) What is the best time of day to fly to minimize delays?##
+
+Considering the departure delays:I make a heat map across the days of the week and the time of the day over the 1 yeardata and aggregate over the departure delay.
+
+```{r}
+setwd("C:/Users/Vijai/OneDrive/Github/STA380 - 08132015/STA380-master/data")
+
+```
+
+
+```{r}
+
+
+airports= read.csv('ABIA.csv')
+attach(airports)
+airports$DepTime_hour=as.integer(DepTime/100)
+airports$ArrTime_hour=as.integer(ArrTime/100)
+
+names(airports)
+
+dep_agg<- aggregate(DepDelay~DayOfWeek+DepTime_hour,airports,FUN='sum')
+library(ggplot2)
+library(RColorBrewer)
+ggplot(dep_agg, aes(DepTime_hour,y=DayOfWeek))+
+  geom_tile(aes(fill=DepDelay))+
+  scale_fill_gradientn(colours=brewer.pal(9,"BrBG"),
+                       breaks=seq(0,max(dep_agg$DepDelay),by=3000))+
+  scale_y_continuous(breaks=7:1,labels=c("Sun","Sat","Fri","Thur","Wed","Tue","Mon"))+
+  labs(x="Time of Day (hours)", y="Day of Week")+ coord_fixed()
+
+```
+
+##Analysis :##
+
+The best time of the day to fly to minimize the departure delay is during the early morning hours between 3am till 7 am as denoted by the low intensity of the heat map during these times
+
+As the day progresses, the departure delay starts to increase and reaches the maximum during evening hours of 7 pm and 9pm (denoted in the heatmap as 19 and 21 hours)
+
+
+Considering the departure delays,I make a heat map across the days of the week and the time of the day overthe 1 year data and aggregate over the arrival delay.
+
+```{r}
+dep_agg<- aggregate(ArrDelay~DayOfWeek+ArrTime_hour,airports,FUN='sum')
+library(ggplot2)
+library(RColorBrewer)
+ggplot(dep_agg, aes(ArrTime_hour,y=DayOfWeek))+
+  geom_tile(aes(fill=ArrDelay))+
+  scale_fill_gradientn(colours=brewer.pal(9,"BrBG"),
+                       breaks=seq(0,max(dep_agg$ArrDelay),by=3000))+
+  scale_y_continuous(breaks=7:1,labels=c("Sun","Sat","Fri","Thur","Wed","Tue","Mon"))+
+  labs(x="Time of Day (hours)", y="Day of Week")+ coord_fixed()
+
+```
+
+
+##Analysis:##
+
+The best time of the day to fly to minimize the arrival delay is during the morning hours between 3 am till 10 am and again after that between 12 noon and 1 pm
+
+
+As the day progresses,the arrival delay starts to increase and reaches the maximum during evening hours of
+8 pm and12 midnight (denoted in the heatmap as 20 and 24 hours)
+
+
+## 2) What is the best time of year to fly to minimize delays?##
+
+Considering the arrival delays firstly,I again plot a heatmap to analyse the delays across the months and days
+
+```{r}
+arr_agg_month<- aggregate(ArrDelay~DayOfWeek+Month,airports,FUN='sum')
+
+ggplot(arr_agg_month, aes(Month,y=DayOfWeek))+
+  geom_tile(aes(fill=ArrDelay))+
+  scale_fill_gradientn(colours=brewer.pal(9,"BrBG"),
+                       breaks=seq(0,max(arr_agg_month$ArrDelay),by=3000))+
+  scale_y_continuous(breaks=7:1,labels=c("Sun","Sat","Fri","Thur","Wed","Tue","Mon"))+
+  scale_x_continuous(breaks=1:12, labels=c("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"))+
+  labs(x="Month", y="Day of Week")+ coord_fixed()
+```
+
+##Analysis :##
+
+While the in the Month of March, there were significant arrival delays on Monday.Similarly, in the month ofApril,Friday sees a significant amount of arrival delay##
+
+Then, I consider the departure delays and again plot a heatmap to analyse the delays across the months and days
+
+```{r}
+Dep_agg_month<-aggregate(DepDelay~DayOfWeek+Month,airports,FUN='sum')
+
+ggplot(Dep_agg_month, aes(Month,y=DayOfWeek))+
+  geom_tile(aes(fill=DepDelay))+
+  scale_fill_gradientn(colours=brewer.pal(9,"BrBG"),
+                       breaks=seq(0,max(Dep_agg_month$DepDelay),by=3000))+
+  scale_y_continuous(breaks=7:1,labels=c("Sun","Sat","Fri","Thur","Wed","Tue","Mon"))+ scale_x_continuous(breaks=1:12, labels=c("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"))+
+  labs(x="Month", y="Day of Week")+ coord_fixed()
+
+```
+
+
+##Analysis :##
+
+The best time of year to fly to minimize departure delay are in the months of September,October and November
+
+While the in the Month of March, there were significant departure delays on Monday.Similarly, in the month ofApril and May,Friday sees a significant amount of arrival delay.
+
+
+## 3) How do patterns of flights to different destinations or parts of the country change over the course of ##the year?
+
+For this problem, I plot the different airport cities over the geographic map according to the coordinates of the city airport.Then I aggregate on the number of flights departing from each city airport and the size of the size of the dots correspond to the number of departing flights from that city airport.
+
+```{r echo=FALSE,fig.align="center"}
+
+##Process airport codes and latitude and longitutde
+setwd("C:/Users/Vijai/OneDrive/Github/STA380 - 08132015/STA380-master/data")
+airports = read.csv('airports latlong.dat', header = FALSE)
+
+names(airports)= c('ID', 'Airport Name','City','Country','IATA','ICAO','Latitude','Longitude','V9', 'v10', 'v11', 'v12')
+
+airports = airports[,-c(1,6,9,10,11,12)]
+airports = airports[,c(4,1,2,3,5,6)]
+
+##Process the data available
+
+airline<-read.csv("ABIA.csv")
+
+mergeTable = data.frame(matrix(NA, nrow = 99260))
+mergeTable = mergeTable[,-c(1)]
+mergeTable = cbind(airline,mergeTable)
+mergeTable = merge(mergeTable, airports, by.x = "Origin", by.y = "IATA", all.x = TRUE)
+
+mergeTable = mergeTable[,-c(30,32)]
+colnames(mergeTable)[32] = "Origin_Longitude"
+colnames(mergeTable)[31] = "Origin_Latitude"
+colnames(mergeTable)[30] = "Origin_City"
+
+mergeTable = merge(mergeTable, airports, by.x = "Dest", by.y = "IATA", all.x = TRUE)
+mergeTable = mergeTable[,-c(33,35)]
+colnames(mergeTable)[33] = "Dest_City"
+colnames(mergeTable)[34] = "Dest_Latitude"
+colnames(mergeTable)[35] = "Dest_Longitude" 
+
+
+airline3<-mergeTable
+airline3$flights<-1
+
+airline3<-aggregate(flights ~ Origin_City+Origin_Latitude+Origin_Longitude, data = airline3, sum)
+
+head(airline3)
+library(ggmap)
+
+airline3$Origin_Latitude<-as.numeric(airline3$Origin_Latitude)
+airline3$Origin_Longitude<-as.numeric(airline3$Origin_Longitude)
+
+
+library(ggplot2)
+library(maps)
+#load us map data
+all_states <- map_data("state", colour="white")
+#plot all states with ggplot
+p <- ggplot()
+p <- p + geom_polygon( data=all_states, aes(x=long, y=lat, group = group),colour="white", fill="grey10" )
+
+p <- p + geom_point( data=airline3, aes(x=Origin_Longitude, y=Origin_Latitude, size = sqrt(flights)), color="coral1") 
+
+# p <- p +geom_point(data=airline3, aes(y = Origin_Latitude, x = Origin_Longitude, size = sqrt(flights*1000), colour = "red"))
+#scale_size(name="Total Flights")
+p <- p + geom_text( data=airline3, hjust=0.5, vjust=-0.8, aes(x=Origin_Longitude, y=Origin_Latitude, label=Origin_City), colour="orange", size=4 )
+
+p
+
+
+```
+
+##Analysis##
+Austin, Dallas, Denver, Phoenix, El Paso see a high volume of flights over the course of the year while Salt Lake City, Minneapolis,Nashville etc have a realtively low volume of flights
+
+#Ques 2. Author attribution#
+
+##Model 1:Applying Naives Bayes Model##
+
+The code below is used to roll the documents from the directory below into 50 corpora and each representing the documents written by 50 different authors
+
+```{r}
+library(tm)
+
+author_dirs = Sys.glob('../data/ReutersC50/C50train/*')
+    author_dirs = author_dirs[1:50]
+    file_list = NULL
+    labels = NULL
+    for(author in author_dirs) {
+      author_name = substring(author, first=29)
+      files_to_add = Sys.glob(paste0(author, '/*.txt'))
+      file_list = append(file_list, files_to_add)
+      labels = append(labels, rep(author_name, length(files_to_add)))
+    }
+    
+    readerPlain = function(fname){
+				readPlain(elem=list(content=readLines(fname)), 
+							id=fname,
+							language='en') }
+```  
+
+
+The snippet below stores the contents of documents in the my_corpus variable and the code also retrieves
+the files names for each corpus and assigns it to the corresponding corpus.
+
+    ```{r}  
+    all_docs = lapply(file_list, readerPlain) 
+    names(all_docs) = file_list
+    names(all_docs) = sub('.txt', '', names(all_docs))
+
+    my_corpus = Corpus(VectorSource(all_docs))
+    names(my_corpus) = file_list
+```
+
+
+The data in the documents are preprocessed and the following transformations are made - make the documentlowercase,remove numbers, remove punctutations, remove excess white-space and 'SMART' stopwords are removed.
+
+```{r}   
+    # Preprocessing
+    my_corpus = tm_map(my_corpus, content_transformer(tolower)) # make everything lowercase
+    my_corpus = tm_map(my_corpus, content_transformer(removeNumbers)) # remove numbers
+    my_corpus = tm_map(my_corpus, content_transformer(removePunctuation)) # remove punctuation
+    my_corpus = tm_map(my_corpus, content_transformer(stripWhitespace)) ## remove excess white-space
+    my_corpus = tm_map(my_corpus, content_transformer(removeWords), stopwords("SMART"))
+
+    DTM = DocumentTermMatrix(my_corpus)
+    
+    class(DTM)  # a special kind of sparse matrix format
+
+    
+```
+
+
+The summary shows 2500 documents of 50 different authors having sparsity of 93%
+We remove the sparse terms below:
+
+```{r}
+  
+    DTM = removeSparseTerms(DTM, 0.945)
+    
+```
+
+
+Creating a dense matrix from a sparse matrix as some function will not work on sparse matrix. The con side is that we are wasting memory space.
+
+```{r}
+    # Now a dense matrix
+    X = as.matrix(DTM)
+```
+
+
+Creating the multinomial probability vector for each of the 50 authors
+using the smoothing factor to account for the occurences of a word that is not available in training corpus.
+
+```{r}
+    w <- list()
+    smooth_count = 1/nrow(X)
+    for(i in 0:49) {
+      w[[i+1]] = colSums(X[(i*50+1):((i+1)*50),] + smooth_count)
+      w[[i+1]] = w[[i+1]]/sum(w[[i+1]])
+    }
+```
+
+
+The code below is used to roll the test documents from the directory below into 50 corpora and each representing the documents written by 50 different authors
+
+```{r}
+    #Let's take a specific test document
+    #Getting the X matrix for the test documents
+    author_dirs = Sys.glob('../data/ReutersC50/C50test/*')
+    author_dirs = author_dirs[1:50]
+    file_list = NULL
+    labels = NULL
+    for(author in author_dirs) {
+      author_name = substring(author, first=28)
+      files_to_add = Sys.glob(paste0(author, '/*.txt'))
+      file_list = append(file_list, files_to_add)
+      labels = append(labels, rep(author_name, length(files_to_add)))
+    }
+
+```
+
+
+The snippet below stores the contents of test documents in the my_corpus variable and the code also retrieves the files names for each corpus and assigns it to the corresponding corpus.
+
+```{r}
+    # Need a more clever regex to get better names here
+    all_docs = lapply(file_list, readerPlain) 
+    names(all_docs) = file_list
+    names(all_docs) = sub('.txt', '', names(all_docs))
+    my_corpus = Corpus(VectorSource(all_docs))
+    names(my_corpus) = file_list
+```
+  
+  
+The data in the test documents are preprocessed and the following transformations are made - make thedocument lowercase,remove numbers, remove punctutations, remove excess white-space and 'SMART' stopwords are removed.
+
+```{r}
+    
+    # Preprocessing
+    my_corpus = tm_map(my_corpus, content_transformer(tolower)) # make everything lowercase
+    my_corpus = tm_map(my_corpus, content_transformer(removeNumbers)) # remove numbers
+    my_corpus = tm_map(my_corpus, content_transformer(removePunctuation)) # remove punctuation
+    my_corpus = tm_map(my_corpus, content_transformer(stripWhitespace)) ## remove excess white-space
+    my_corpus = tm_map(my_corpus, content_transformer(removeWords), stopwords("SMART"))
+
+    DTM = DocumentTermMatrix(my_corpus)
+    
+    class(DTM)  # a special kind of sparse matrix format
+```
+ 
+
+The summary shows 2500 documents of 50 different authors having sparsity of 93%
+We remove the sparse terms below:
+
+```{r}
+    DTM = removeSparseTerms(DTM, 0.945)
+```
+ 
+Now we will test each document from the test data document matrix which is of size 50*50 against each author'sdocuments and later comparing  the calculated log probabilities under the Naives Bayes Model and returning the maximum summed value.The author's index corresponding to this maximum value will be stored.
+
+Like this, all the 2500 documents will be checked.
+
+```{r}
+
+    # Now a dense matrix
+    X_test = as.matrix(DTM)
+
+    head(sort(X_test, decreasing=TRUE), 25)
+
+    c <- as.array(NA, dim = c(50,1))
+    m <- matrix(data = NA, nrow = 2500, ncol = 2)
+
+    # Compare log probabilities under the Naive Bayes model
+    for( j in 1:2500)
+    {
+      for( i in 1:50) {
+        
+        df_test <- t(data.frame(X_test[j,]))  #(X_test[j,])
+        df_train <- data.frame(w[[i]]) #(w[[i]])
+        df_train <- t(df_train)
+        cmn <- intersect(colnames(df_train), colnames(df_test))
+        df_train_updated <- df_train[,cmn]
+        df_test_updated <- df_test[,cmn]
+        X_test_mat <- as.matrix(df_test_updated)
+        X_train_mat <- as.matrix(df_train_updated)
+        
+        c[i] = sum(X_test_mat * log(X_train_mat))
+      }
+      
+      m[j,1] = max(c)
+      m[j,2] = which.max(c)
+      
+    }
+
+    auth = substr(row.names(as.data.frame(X)), 29,
+    length(row.names(as.data.frame(X))))
+    author = substr(auth, 1, regexpr("/",auth)-1)
+    m[,1] = author
+    author_new = unique(author)
+    g <- matrix(data = NA, nrow=50, ncol=2)
+
+
+    for (i in 1:50)
+     {  
+      s <- table(m[((i-1)*50):(i*50),2])
+      su <- s[names(s) == i]/50.0
+      g[i,1] <- su
+      g[i,2] <- author_new[i]
+  
+    }
+    
+    g <- as.data.frame(g)
+```
+
+
+The top 5 authors predicted by Naive Bayes:
+
+```{r}
+    head(g[order(g$V1, decreasing=TRUE),])
+```
+
+
+The model performs the least on predicting the following authors    
+```{r}
+head(g[order(g$V1, decreasing=FALSE),])
+```
+
+
+Finding the overall average accuracy rate for the naive bayes algorithm
+```{r}
+    sum(as.numeric(as.character(g[,1])))
+    cat("The Naive Bayes model on an average predicts ",
+    sum(as.numeric(as.character(g[,1])))/50.0 * 100, "% accurately")
+```
+
+
+##Model 2: Applying Random Forest Model as the other model
+
+Considering the words which are present in both test and train data and hence taking the intersection
+
+```{r}
+set.seed(2)
+library(randomForest)
+
+#Using the document term matrices created for test  & train
+X_train <- X
+X_test <- X_test
+
+cmn_rf <- intersect(colnames(X_test), colnames(X_train))
+
+
+```
+
+
+Extracting the author name from the rownames of the term document matrix by the use of regular expressions.
+
+```{r}
+X_train_trim <- X_train[,cmn_rf]
+X_test_trim <- X_test[,cmn_rf]
+
+df_X_train = as.data.frame(X_train_trim)
+df_X_test = as.data.frame(X_test_trim)
+
+auth = substr(row.names(df_X_train), 29, length(row.names(df_X_train)))
+author = substr(auth, 1, regexpr("/",auth)-1)
+df_X_train["Author"] = author
+
+authtest = substr(row.names(df_X_test), 28, length(row.names(df_X_test)))
+authortest = substr(authtest, 1, regexpr("/",authtest)-1)
+```
+
+
+Keeping only the distinct author names and assigning author id to eah corresponding author##
+```{r}
+df_author = data.frame(unique(author))
+
+row_index = 1:nrow(df_author)
+
+df_X_test["Author"] = authortest
+
+```
+
+
+Removing the dependent attribute("Author"") from the train and test dataset ## 
+
+```{r}
+df_train_label = df_X_train[,"Author"]
+
+df_X_train = df_X_train[,-531]
+
+df_test_label = df_X_test[,"Author"]
+
+df_X_test = df_X_test[,-531]
+```
+
+
+Running the RandomForest model with the common words between training and testing document as the predictor variables and the Author id as the dependent variable.
+
+The model is run with 150 trees making split at each node out of 6 sets of words each time
+```{r}
+
+df_train.rf <- randomForest(x=df_X_train, y=as.factor(df_train_label),
+mtry=6, ntree=150)
+
+predicted = predict(df_train.rf, df_X_test)
+
+df = as.data.frame(predicted)
+df["test"] = df_test_label
+
+df["compare"] = as.numeric(df["test"] == df["predicted"])
+
+cat("The probability of the random forest model is : ",
+sum(df["compare"])/2500 * 100, "%")
+
+```
+
+
+Finding the model accuracy for each of the 50 authors
+```{r}
+df_predict = as.data.frame(unique(author))
+for (i in 1:50)
+{
+    df_predict[i,"probab"] = sum(df[((i-1)*50):(i*50),"compare"])/50.0
+}
+```
+
+
+The top 5 authors predicted by Naive Bayes:
+```{r}
+df_predict = df_predict[,c(2,1)]
+head(df_predict[order(df_predict$probab, decreasing=TRUE),])
+```
+
+
+The model performs poorly on predicting the following authors
+```{r}
+head(df_predict[order(df_predict$probab, decreasing=FALSE),])
+```
+
+
+Finding the overall accuracy rate of the Random Forest Model
+```{r}
+cat("The probability of the random forest model is : ",
+sum(df["compare"])/2500 * 100, "%")
+```
+
+Finding the accuracy of the Random Forest Model
+```{r}
+cat("The probability of the random forest model is : ", sum(df["compare"])/2500 * 100, "%")
+
+```
+
+
+##How well do your models do at predicting the author identities in this out-of-sample setting?##
+The Naive Bayes model on an average predicts  54.56 % accurately about the document being written from an actual author Whereas the random forest model on an average predicts 53.96 % accurately
+
+
+##Are there any sets of authors whose articles seem difficult to distinguish from one another?## 
+For authors like "EdnaFernandes","ScottHillis","DarrenSchuettler" and "DavidLawder", the articles seem difficult to distinguish from one another.Since these are the authors which rank at the bottom of both the models in terms of accuracy prediction rate.
+
+
+##Which model do you prefer?##
+I prefer the Naives Bayes Model over the Random Forest one since the overall accuracy rate for the Naives Bayes(54.56 %) is greater than that in case of the Random Forest Model(53.96%)
+
+
+#Ques 3. Association rule mining#
+
+
+Reading the text file in the 'basket' format as transactions
+```{r message = FALSE}
+library(arules) 
+my_groceries=read.transactions("groceries.txt", format ="basket", sep = ",",
+                               rm.duplicates = TRUE)
+
+```
+
+Whole milk,Other vegetables,rolls/buns,soda and yogurt are top grocery items by count
+```{r}
+itemFrequencyPlot(my_groceries, topN = 25)
+```
+
+Applying the apriori function to find the association rules within the items
+Generate all itemsets whose support >= minsup of 0.01 and Confidence is >= 0.5
+
+```{r message = FALSE, warnings = FALSE}                   
+grocery_rules <-apriori(my_groceries,parameter=list(support=.01, confidence=.5, maxlen=4))
+
+```
+
+
+Analysing the rules which are generated from the apriori function
+```{r}
+inspect(grocery_rules)
+
+## Inspecting itemsets with lift value > 2
+inspect(subset(grocery_rules, subset=lift > 2))
+
+## Inspecting itemsets with support value > 0.01 & confidence > 0.5
+inspect(subset(grocery_rules, subset=support > 0.01 & confidence > 0.5))
+
+## Inspecting itemsets with confidence > 0.5
+inspect(subset(grocery_rules, subset=confidence > 0.5))
+```
+
+There is a high propensity for people buying "Other Vegetables and yogurt" since they have a high
+support value of 0.02226741.
+
+Similarily, for people buying "citrus fruit and root vegetables", they  are more likely to purchase
+other vegetables" as well since this association has a high confidence value of 0.5862069.
+
+Plotting the confidence versus support graph and analysing the support and confidence values.
+
+```{r}
+
+library(arulesViz)
+plot(grocery_rules)
+plot(grocery_rules, method="graph", control=list(type="items"))
+```
+
+
+
+
